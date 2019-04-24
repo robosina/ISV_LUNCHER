@@ -22,8 +22,8 @@ color: rgb(255, 255, 255);</string>
    <widget class="QStackedWidget" name="stackedWidget">
     <property name="geometry">
      <rect>
-      <x>390</x>
-      <y>100</y>
+      <x>380</x>
+      <y>90</y>
       <width>421</width>
       <height>521</height>
      </rect>
@@ -51,13 +51,13 @@ border-color: rgb(30,30,60);</string>
       </property>
       <property name="styleSheet">
        <string notr="true">font: 75 14pt &quot;Times New Roman&quot;;
-border-width:2px;
+border-width:4px;
 border-radius:100px;
 border-color:rgb(70,70,90);
 padding:3px;
 background-color: rgb(50, 50, 100);
 color: rgb(255, 255, 255);
-border-color: rgb(160,160,200);</string>
+border-color: rgb(0,160,200);</string>
       </property>
       <property name="text">
        <string/>
@@ -167,7 +167,7 @@ border-color:rgb(70,70,90);
 padding:8px;
 background-color: rgb(50, 50, 100);
 color: rgb(255, 255, 255);
-border-color: rgb(0,160,200);</string>
+border-color: rgb(240,120,0);</string>
       </property>
       <property name="text">
        <string/>
@@ -302,7 +302,7 @@ border-color: rgb(30,30,60);</string>
        <number>1</number>
       </property>
       <property name="maximum">
-       <number>100</number>
+       <number>1000</number>
       </property>
       <property name="value">
        <number>10</number>
@@ -335,7 +335,7 @@ border-color: rgb(30,30,60);</string>
        <number>1</number>
       </property>
       <property name="maximum">
-       <number>100</number>
+       <number>1000</number>
       </property>
       <property name="value">
        <number>10</number>
@@ -382,7 +382,7 @@ border-color: rgb(30,30,60);</string>
      <widget class="QPushButton" name="button_0">
       <property name="geometry">
        <rect>
-        <x>17</x>
+        <x>0</x>
         <y>290</y>
         <width>69</width>
         <height>59</height>
@@ -421,7 +421,7 @@ border-style:outset;border-width:2px;border-radius:25px;border-color:rgb(0,0,0);
      <widget class="QPushButton" name="button_2">
       <property name="geometry">
        <rect>
-        <x>167</x>
+        <x>160</x>
         <y>290</y>
         <width>69</width>
         <height>59</height>
@@ -460,9 +460,9 @@ border-style:outset;border-width:2px;border-radius:25px;border-color:rgb(0,0,0);
      <widget class="QPushButton" name="button_clear">
       <property name="geometry">
        <rect>
-        <x>130</x>
+        <x>320</x>
         <y>430</y>
-        <width>151</width>
+        <width>69</width>
         <height>59</height>
        </rect>
       </property>
@@ -499,7 +499,7 @@ border-style:outset;border-width:2px;border-radius:25px;border-color:rgb(0,0,0);
      <widget class="QPushButton" name="button_5">
       <property name="geometry">
        <rect>
-        <x>20</x>
+        <x>0</x>
         <y>360</y>
         <width>69</width>
         <height>59</height>
@@ -538,7 +538,7 @@ border-style:outset;border-width:2px;border-radius:25px;border-color:rgb(0,0,0);
      <widget class="QPushButton" name="button_7">
       <property name="geometry">
        <rect>
-        <x>170</x>
+        <x>160</x>
         <y>360</y>
         <width>69</width>
         <height>59</height>
@@ -616,7 +616,7 @@ border-style:outset;border-width:2px;border-radius:25px;border-color:rgb(0,0,0);
      <widget class="QPushButton" name="button_8">
       <property name="geometry">
        <rect>
-        <x>245</x>
+        <x>240</x>
         <y>360</y>
         <width>69</width>
         <height>59</height>
@@ -655,7 +655,7 @@ border-style:outset;border-width:2px;border-radius:25px;border-color:rgb(0,0,0);
      <widget class="QPushButton" name="button_1">
       <property name="geometry">
        <rect>
-        <x>92</x>
+        <x>80</x>
         <y>290</y>
         <width>69</width>
         <height>59</height>
@@ -733,7 +733,7 @@ border-style:outset;border-width:2px;border-radius:25px;border-color:rgb(0,0,0);
      <widget class="QPushButton" name="button_6">
       <property name="geometry">
        <rect>
-        <x>95</x>
+        <x>80</x>
         <y>360</y>
         <width>69</width>
         <height>59</height>
@@ -974,6 +974,45 @@ border-style:outset;border-width:2px;border-radius:25px;border-color:rgb(0,0,0);
        <string>ثبت تغییرات</string>
       </property>
      </widget>
+     <widget class="QPushButton" name="button_dot">
+      <property name="geometry">
+       <rect>
+        <x>240</x>
+        <y>430</y>
+        <width>69</width>
+        <height>59</height>
+       </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>5000000</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QPushButton:pressed {
+font: 75 14pt &quot;Times New Roman&quot;;
+color: rgb(255, 255, 255);
+background-color: rgb(100, 145, 255);
+border-style:inset;border-width:2px;border-radius:25px;border-color:rgb(0,0,0);padding:3px;
+}
+QPushButton{
+font: 75 14pt &quot;Times New Roman&quot;;
+color: rgb(255, 255, 255);
+background-color: rgb(80, 125, 255);
+border-style:outset;border-width:2px;border-radius:25px;border-color:rgb(0,0,0);padding:3px;
+}</string>
+      </property>
+      <property name="text">
+       <string>.</string>
+      </property>
+     </widget>
     </widget>
    </widget>
    <widget class="QPushButton" name="button_manual_mode">
@@ -1142,11 +1181,13 @@ border-style:outset;border-width:2px;border-radius:25px;border-color:rgb(0,0,0);
       <x>20</x>
       <y>90</y>
       <width>351</width>
-      <height>351</height>
+      <height>151</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">background-color: rgb(50, 50, 100);</string>
+     <string notr="true">background-color: rgb(50, 50, 100);
+font: 75 11pt &quot;Times New Roman&quot;;
+color:rgb(40,200,240);</string>
     </property>
     <property name="sortingEnabled">
      <bool>false</bool>
@@ -1165,7 +1206,7 @@ border-style:outset;border-width:2px;border-radius:25px;border-color:rgb(0,0,0);
     </attribute>
     <column>
      <property name="text">
-      <string>file name</string>
+      <string>FileName</string>
      </property>
     </column>
    </widget>
@@ -1173,9 +1214,9 @@ border-style:outset;border-width:2px;border-radius:25px;border-color:rgb(0,0,0);
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>450</y>
+      <y>250</y>
       <width>351</width>
-      <height>161</height>
+      <height>361</height>
      </rect>
     </property>
     <property name="styleSheet">
@@ -1184,27 +1225,11 @@ border-style:outset;
 border-color:rgb(70,70,90);
 padding:3px;
 background-color: rgb(50, 50, 100);
-color: rgb(255, 255, 255);
+color: rgb(240,160,40);
 border-color: rgb(30,30,60);</string>
     </property>
     <property name="plainText">
      <string/>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label">
-    <property name="geometry">
-     <rect>
-      <x>90</x>
-      <y>250</y>
-      <width>271</width>
-      <height>51</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;سلام x برابر با دو قرار بگیرد.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
     </property>
    </widget>
   </widget>

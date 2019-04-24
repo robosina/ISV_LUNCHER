@@ -1,18 +1,15 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+const double MainWindow::EPS=0.0001;
+
 MainWindow::MainWindow(QWidget *parent) :
                                           QMainWindow(parent),
                                           ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
-//    ui->label->setLayoutDirection(Qt::RightToLeft);
-
-
-//    ui->label->setAlignment(Qt::AlignRight);
-
-
+    set_radius_for_labels(30);
     m_setting_file=QApplication::applicationDirPath()+"/settings.ini";
     m_selected_mode=Mode::joyStick;
     create_folder_for_settings();
@@ -28,6 +25,31 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->label_left,SIGNAL(mouseDouble()),this,SLOT(left_button_clicked()));
     connect(ui->label_right,SIGNAL(mouseDouble()),this,SLOT(right_button_clicked()));
 
+    //when a button pressed for a while
+    up_button_checker=new QTimer(this);
+    down_button_checker=new QTimer(this);
+    right_button_checker=new QTimer(this);
+    left_button_checker=new QTimer(this);
+    connect(ui->label_up,SIGNAL(mousePressed()),this,SLOT(up_button_pressed()));
+    connect(ui->label_up,SIGNAL(mouseReleased()),this,SLOT(up_button_released()));
+    connect(up_button_checker,SIGNAL(timeout()),this,SLOT(up_button_clicked()));
+    connect(up_button_checker,SIGNAL(timeout()),this,SLOT(refresh_timer_value()));
+
+    connect(ui->label_down,SIGNAL(mousePressed()),this,SLOT(down_button_pressed()));
+    connect(ui->label_down,SIGNAL(mouseReleased()),this,SLOT(down_button_released()));
+    connect(down_button_checker,SIGNAL(timeout()),this,SLOT(refresh_timer_value()));
+    connect(down_button_checker,SIGNAL(timeout()),this,SLOT(down_button_clicked()));
+
+    connect(ui->label_right,SIGNAL(mousePressed()),this,SLOT(right_button_pressed()));
+    connect(ui->label_right,SIGNAL(mouseReleased()),this,SLOT(right_button_released()));
+    connect(right_button_checker,SIGNAL(timeout()),this,SLOT(right_button_clicked()));
+    connect(right_button_checker,SIGNAL(timeout()),this,SLOT(refresh_timer_value()));
+
+    connect(ui->label_left,SIGNAL(mousePressed()),this,SLOT(left_button_pressed()));
+    connect(ui->label_left,SIGNAL(mouseReleased()),this,SLOT(left_button_released()));
+    connect(left_button_checker,SIGNAL(timeout()),this,SLOT(left_button_clicked()));
+    connect(left_button_checker,SIGNAL(timeout()),this,SLOT(refresh_timer_value()));
+
     //set focus trigger for lineEdits
     connect(ui->lineEdit_X,SIGNAL(focusin()),this,SLOT(on_lineEditX_triggered()));
     connect(ui->lineEdit_Y,SIGNAL(focusin()),this,SLOT(on_lineEditY_triggered()));
@@ -35,8 +57,60 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->lineEdit_Y,SIGNAL(focusout()),this,SLOT(on_lineEditY_turn_off()));
     load_setting();
 
+
+    //this section is created for enabling ui responsivness
+    size_of_main_windows=this->geometry();
+    list_widget=ui->centralWidget->findChildren<QWidget*>();
+    foreach (QWidget* w, list_widget) {
+        size_of_all_objects.push_back(w->geometry());
+    }
+
+    connect(this,SIGNAL(X_value_signal()),this,SLOT(on_X_value_changed()));
+    connect(this,SIGNAL(Y_value_signal()),this,SLOT(on_Y_value_changed()));
+
+    reset_all_labels();
 }
 
+void MainWindow::on_X_value_changed()
+{
+    qDebug()<<"SIGNAL EMMITTED::X value has been changed"<<m_x<<endl;
+}
+
+void MainWindow::on_Y_value_changed()
+{
+    qDebug()<<"SIGNAL EMMITTED::Y value has been changed"<<m_y<<endl;
+}
+
+
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    QRect new_size=this->geometry();
+    double width_scale=static_cast<double>(new_size.width())/size_of_main_windows.width();
+    double height_scale=static_cast<double>(new_size.height())/size_of_main_windows.height ();
+    int count=0;
+
+    foreach (QWidget* w, list_widget) {
+        w->setGeometry(change_geometry(size_of_all_objects[static_cast<size_t>(count)],width_scale,height_scale));
+        count++;
+    }
+
+
+
+
+}
+
+QRect MainWindow::change_geometry(QRect rect, double width_scale, double height_scale)
+{
+    int new_width=static_cast<int>( rect.width()*width_scale);
+    int new_heigt=static_cast<int>( rect.height()*height_scale);
+    int new_x=static_cast<int>( rect.x()*width_scale);
+    int new_y=static_cast<int>(rect.y()*height_scale);
+    rect.setX(new_x);
+    rect.setY(new_y);
+    rect.setWidth(new_width);
+    rect.setHeight(new_heigt);
+    return rect;
+}
 void MainWindow::create_folder_for_settings()
 {
     m_joyStick_saved_folder=QApplication::applicationDirPath()+"/joyStick_setting";
@@ -75,15 +149,17 @@ void MainWindow::load_setting()
     QString X_string = settings.value("m_x", "").toString();
     QString Y_string = settings.value("m_Y", "").toString();
 
-    ui->horizontalSlider_XSTEP->setValue(XSTEP_string.toInt());
-    ui->horizontalSlider_YSTEP->setValue(YSTEP_string.toInt());
+    ui->horizontalSlider_XSTEP->setValue(static_cast<int>(100*XSTEP_string.toDouble()));
+    ui->horizontalSlider_YSTEP->setValue(static_cast<int>(100*YSTEP_string.toDouble()));
 
-    m_x=X_string.toInt();
-    QString XString="X : "+QString::number(m_x);
+    set_m_x(X_string.toDouble());
+    emit X_value_signal();
+    QString XString="X : "+QString::number(read_m_x());
     ui->label_X->setText(XString);
 
-    m_y=Y_string.toInt();
-    QString YString="Y : "+QString::number(m_y);
+    set_m_y(Y_string.toDouble());
+    emit Y_value_signal();
+    QString YString="Y : "+QString::number(read_m_y());
     ui->label_Y->setText(YString);
 
 }
@@ -95,26 +171,26 @@ void MainWindow::save_setting(int var)
     {
     case save_var::X_STEP_CHANGED:
     {
-        QString XSTEP_string = QString::number(m_XSTEP);
+        QString XSTEP_string = QString::number(read_m_XSTEP());
         settings.setValue("m_XSTEP", XSTEP_string);
         break;
     }
     case save_var::Y_STEP_CHANGED:
     {
-        QString YSTEP_string = QString::number(m_YSTEP);
+        QString YSTEP_string = QString::number(read_m_YSTEP());
         settings.setValue("m_YSTEP", YSTEP_string);
         break;
     }
 
     case save_var::Y_CHANGED:
     {
-        QString Y_string = QString::number(m_y);
+        QString Y_string = QString::number(read_m_y());
         settings.setValue("m_Y", Y_string);
         break;
     }
     case save_var::X_CHANGED:
     {
-        QString X_string = QString::number(m_x);
+        QString X_string = QString::number(read_m_x());
         settings.setValue("m_x", X_string);
         break;
     }
@@ -200,17 +276,17 @@ void MainWindow::show_selected_config(int row_number)
         {
             QString line=in.readLine();
             switch (i) {
-            case 0:{for_plain_text+="X : "+line +"\n" ;m_x=line.toInt();break;}
-            case 1:{for_plain_text+="Y : "+line +"\n" ;m_y=line.toInt();break;}
-            case 2:{for_plain_text+="X_STEP : "+line+"\n" ;m_XSTEP=line.toInt();break;}
-            case 3:{for_plain_text+="Y_STEP : "+line+"\n" ;m_YSTEP=line.toInt();break;}
+            case 0:{for_plain_text+="X : "+line +"\n" ;m_x_temp=line.toDouble();break;}
+            case 1:{for_plain_text+="Y : "+line +"\n" ;m_y_temp=line.toDouble();break;}
+            case 2:{for_plain_text+="X_STEP : "+line+"\n" ;m_XSTEP_temp=line.toDouble();break;}
+            case 3:{for_plain_text+="Y_STEP : "+line+"\n" ;m_YSTEP_temp=line.toDouble();break;}
             }
         }
         else if (m_selected_mode==Manual) {
             QString line=in.readLine();
             switch (i) {
-            case 0:{for_plain_text+="X : "+line +"\n" ;m_x=line.toInt();break;}
-            case 1:{for_plain_text+="Y : "+line +"\n" ;m_y=line.toInt();break;}
+            case 0:{for_plain_text+="X : "+line +"\n" ;m_x_temp=line.toDouble();break;}
+            case 1:{for_plain_text+="Y : "+line +"\n" ;m_y_temp=line.toDouble();break;}
             }
         }
         i++;
@@ -218,10 +294,14 @@ void MainWindow::show_selected_config(int row_number)
     ui->plainTextEdit->setPlainText(for_plain_text);
 }
 
+
+
+
+
 void MainWindow::on_horizontalSlider_XSTEP_valueChanged(int value)
 {
-    m_XSTEP=value;   //save value to use later
-    QString label_xstep_string="XSTEP\n"+QString::number(m_XSTEP);
+    set_m_XSTEP(value);  //save value to use later
+    QString label_xstep_string="XSTEP\n"+QString::number(read_m_XSTEP());
     ui->label_XSTEP->setText(label_xstep_string);
 
     //call save_setting function to save new settings
@@ -230,8 +310,8 @@ void MainWindow::on_horizontalSlider_XSTEP_valueChanged(int value)
 
 void MainWindow::on_horizontalSlider_YSTEP_valueChanged(int value)
 {
-    m_YSTEP=value;  //save value to use later
-    QString label_ystep_string="YSTEP\n"+QString::number(m_YSTEP);
+    set_m_YSTEP(value);      //save value to use later
+    QString label_ystep_string="YSTEP\n"+QString::number(read_m_YSTEP());
     ui->label_YSTEP->setText(label_ystep_string);
 
     //call save_setting function to save new settings
@@ -240,12 +320,12 @@ void MainWindow::on_horizontalSlider_YSTEP_valueChanged(int value)
 
 void MainWindow::up_button_clicked()
 {
-    if(m_YSTEP!=0)
+    if(abs(read_m_YSTEP()-0.0)>EPS)
     {
-        m_y+=m_YSTEP;
-        QString YString="Y : "+QString::number(m_y);
+        set_m_y(read_m_y()+read_m_YSTEP());
+        emit Y_value_signal();
+        QString YString="Y : "+QString::number(read_m_y());
         ui->label_Y->setText(YString);
-
         //save updated Y value in file
         save_setting(save_var::Y_CHANGED);
     }
@@ -254,15 +334,126 @@ void MainWindow::up_button_clicked()
         note("   note that Y step is 0, please change y step first and try again");
     }
 }
+void MainWindow::reset_timer_value()
+{
+    timer_elapsed=250;
+}
+
+void MainWindow::reset_all_labels()
+{
+    ui->label_down->setStyleSheet(default_style_for_label);
+    ui->label_up->setStyleSheet(default_style_for_label);
+    ui->label_right->setStyleSheet(default_style_for_label);
+    ui->label_left->setStyleSheet(default_style_for_label);
+}
+
+void MainWindow::up_button_pressed()
+{
+    ui->label_up->setStyleSheet(pressed_style_for_label);
+    reset_timer_value();
+    up_button_checker->start(timer_elapsed);
+}
+
+void MainWindow::up_button_released()
+{
+    reset_all_labels();
+    up_button_checker->stop();
+    temp_timer=0;
+}
+
+void MainWindow::down_button_pressed()
+{
+    ui->label_down->setStyleSheet(pressed_style_for_label);
+    reset_timer_value();
+    down_button_checker->start(timer_elapsed);
+}
+
+void MainWindow::down_button_released()
+{
+    reset_all_labels();
+    down_button_checker->stop();
+    temp_timer=0;
+}
+
+void MainWindow::right_button_pressed()
+{
+    ui->label_right->setStyleSheet(pressed_style_for_label);
+    reset_timer_value();
+    right_button_checker->start(timer_elapsed);
+}
+
+void MainWindow::right_button_released()
+{
+    reset_all_labels();
+    right_button_checker->stop();
+    temp_timer=0;
+}
+
+void MainWindow::left_button_pressed()
+{
+    ui->label_left->setStyleSheet(pressed_style_for_label);
+    reset_timer_value();
+    left_button_checker->start(timer_elapsed);
+}
+
+void MainWindow::left_button_released()
+{
+    reset_all_labels();
+    left_button_checker->stop();
+    temp_timer=0;
+}
+void MainWindow::refresh_timer_value()
+{
+    temp_timer++;
+    if(temp_timer>2 && temp_timer<4)
+    {
+        set_all_timer_value(130);
+    }
+    else if(temp_timer>=4 && temp_timer<6)
+    {
+        set_all_timer_value(50);
+    }
+    else if(temp_timer>=6)
+    {
+        set_all_timer_value(20);
+    }
+}
+
+void MainWindow::set_all_timer_value(int time)
+{
+    up_button_checker->setInterval(time);
+    down_button_checker->setInterval(time);
+    left_button_checker->setInterval(time);
+    right_button_checker->setInterval(time);
+}
+
+void MainWindow::set_radius_for_labels(int radius)
+{
+    default_style_for_label=QString("border-width:4px;"
+                                      "border-radius:%1px;"
+                                      "border-color:rgb(70,70,90);"
+                                      "padding:8px;"
+                                      "background-color: rgb(50, 50, 100);"
+                                      "color: rgb(255, 255, 255);"
+                                      "border-color: rgb(0,160,200);").arg(radius);
+
+    pressed_style_for_label=QString("border-width:2px;"
+                                      "border-radius:%1px;"
+                                      "border-color:rgb(70,70,90);"
+                                      "padding:8px;"
+                                      "background-color: rgb(50, 50, 100);"
+                                      "color: rgb(255, 255, 255);"
+                                      "border-color: rgb(240,160,0);").arg(radius);
+}
 
 void MainWindow::down_button_clicked()
 {
-    if(m_YSTEP!=0)
+    if(abs(read_m_YSTEP()-0)>EPS)
     {
-        m_y-=m_YSTEP;
-        QString YString="Y : "+QString::number(m_y);
+        set_m_y(read_m_y()-read_m_YSTEP());
+        emit Y_value_signal();
+        QString YString="Y : "+QString::number(read_m_y());
         ui->label_Y->setText(YString);
-
         //save updated Y value in file
         save_setting(save_var::Y_CHANGED);
     }
@@ -274,12 +465,12 @@ void MainWindow::down_button_clicked()
 
 void MainWindow::left_button_clicked()
 {
-    if(m_XSTEP!=0)
+    if(abs(read_m_XSTEP()-0)>EPS)
     {
-        m_x-=m_XSTEP;
-        QString XString="X : "+QString::number(m_x);
+        set_m_x(read_m_x()-read_m_XSTEP());
+        emit X_value_signal();
+        QString XString="X : "+QString::number(read_m_x());
         ui->label_X->setText(XString);
-
         //save updated X value in file
         save_setting(save_var::X_CHANGED);
     }
@@ -291,12 +482,12 @@ void MainWindow::left_button_clicked()
 
 void MainWindow::right_button_clicked()
 {
-    if(m_XSTEP!=0)
+    if(abs(read_m_XSTEP()-0.0)>EPS)
     {
-        m_x+=m_XSTEP;
-        QString XString="X : "+QString::number(m_x);
+        set_m_x(read_m_x()+read_m_XSTEP());
+        emit X_value_signal();
+        QString XString="X : "+QString::number(read_m_x());
         ui->label_X->setText(XString);
-
         //save updated X value in file
         save_setting(save_var::X_CHANGED);
     }
@@ -305,6 +496,10 @@ void MainWindow::right_button_clicked()
         note("   note that X step is 0, please change x step first and try again");
     }
 }
+
+
+
+
 
 void MainWindow::on_button_save_setting_clicked()
 {
@@ -322,7 +517,7 @@ void MainWindow::on_button_save_setting_clicked()
 
         file.open(QIODevice::ReadWrite);
         QTextStream out(&file);
-        out<<m_x<<endl<<m_y<<endl<<m_XSTEP<<endl<<m_YSTEP;
+        out<<read_m_x()<<endl<<read_m_y()<<endl<<read_m_XSTEP()<<endl<<read_m_YSTEP();
 
         note("   Configuration saved in:   JoyStick_"+QString::number(file_number)+".txt");
     }
@@ -340,7 +535,7 @@ void MainWindow::on_button_save_setting_clicked()
 
         file.open(QIODevice::ReadWrite);
         QTextStream out(&file);
-        out<<m_x<<endl<<m_y<<endl;
+        out<<read_m_x()<<endl<<read_m_y()<<endl;
 
         note("   Configuration saved in:   Manual_"+QString::number(file_number)+".txt");
     }
@@ -374,21 +569,28 @@ void MainWindow::on_button_load_selected_setting_clicked()
 {
     if(m_selected_mode==Mode::joyStick)
     {
-        ui->horizontalSlider_XSTEP->setValue(m_XSTEP);
-        ui->horizontalSlider_YSTEP->setValue(m_YSTEP);
+        set_m_XSTEP(100*m_XSTEP_temp);
+        set_m_YSTEP(100*m_YSTEP_temp);
+        set_m_x(m_x_temp);emit X_value_signal();
+        set_m_y(m_y_temp);emit Y_value_signal();
 
-        QString XString="X : "+QString::number(m_x);
+        ui->horizontalSlider_XSTEP->setValue(static_cast<int>(100*read_m_XSTEP()));
+        ui->horizontalSlider_YSTEP->setValue(static_cast<int>(100*read_m_YSTEP()));
+
+        QString XString="X : "+QString::number(read_m_x());
         ui->label_X->setText(XString);
 
-        QString YString="Y : "+QString::number(m_y);
+        QString YString="Y : "+QString::number(read_m_y());
         ui->label_Y->setText(YString);
     }
     else if (m_selected_mode==Mode::Manual)
     {
-        ui->lineEdit_X->setText(QString::number(m_x));
-        ui->lineEdit_Y->setText(QString::number(m_y));
-        ui->label_->setText("x: "+QString::number(m_x));
-        ui->label__->setText("y: "+QString::number(m_y));
+        set_m_x(m_x_temp);emit X_value_signal();
+        set_m_y(m_y_temp);emit Y_value_signal();
+        ui->lineEdit_X->setText(QString::number(read_m_x()));
+        ui->lineEdit_Y->setText(QString::number(read_m_y()));
+        ui->label_->setText("x: "+QString::number(read_m_x()));
+        ui->label__->setText("y: "+QString::number(read_m_y()));
     }
 }
 
@@ -486,6 +688,36 @@ void MainWindow::on_button_9_clicked()
     process_numbers(9);
 }
 
+void MainWindow::on_button_dot_clicked()
+{
+
+    if(m_temp==0)
+    {
+        QString X_STRING=ui->lineEdit_X->text();
+        if(X_STRING.contains("."))
+        {
+            note("  syntax is not correct   ");
+        }
+        else
+        {
+            ui->lineEdit_X->setText(ui->lineEdit_X->text()+".");
+        }
+    }
+    else if(m_temp==1)
+    {
+        QString Y_STRING=ui->lineEdit_Y->text();
+        if(Y_STRING.contains("."))
+        {
+            note("  syntax is not correct   ");
+        }
+        else
+        {
+            ui->lineEdit_Y->setText(ui->lineEdit_Y->text()+".");
+        }
+
+    }
+}
+
 void MainWindow::on_button_clear_clicked()
 {
     if(m_temp==0)
@@ -518,11 +750,11 @@ void MainWindow::on_button_apply_XCHANGE_clicked()
 {
     QString XSTRING=ui->lineEdit_X->text();
     bool validInt;
-    int number=XSTRING.toInt(&validInt);
+    double number=XSTRING.toDouble(&validInt);
     if(validInt)
     {
         note("  X changes to :"+QString::number(number));
-        m_x=number;
+        set_m_x(number);emit X_value_signal();
         ui->label_->setText("x: "+QString::number(number));
     }
 }
@@ -531,11 +763,68 @@ void MainWindow::on_button_apply_YCHANGE_clicked()
 {
     QString YSTRING=ui->lineEdit_Y->text();
     bool validInt;
-    int number=YSTRING.toInt(&validInt);
+    double number=YSTRING.toDouble(&validInt);
     if(validInt)
     {
         note("  Y changes to :"+QString::number(number));
-        m_y=number;
+        set_m_y(number);emit Y_value_signal();emit Y_value_signal();
         ui->label__->setText("y: "+QString::number(number));
     }
 }
+
+void MainWindow::set_m_XSTEP(double xstep)
+{
+    m_XSTEP=xstep;
+}
+
+void MainWindow::set_m_YSTEP(double ystep)
+{
+    m_YSTEP=ystep;
+}
+
+void MainWindow::set_m_x(double x)
+{
+    m_x=x;
+    if(m_x<=0)
+    {
+        m_x=0;
+    }
+    else if (m_x>360)
+    {
+        m_x=360;
+    }
+}
+
+void MainWindow::set_m_y(double y)
+{
+    m_y=y;
+    if(m_y<=4)
+    {
+        m_y=4;
+    }
+    else if(m_y>=45)
+    {
+        m_y=45;
+    }
+}
+
+double MainWindow::read_m_x()
+{
+    return m_x;
+}
+
+double MainWindow::read_m_y()
+{
+    return m_y;
+}
+
+double MainWindow::read_m_XSTEP()
+{
+    return m_XSTEP/100;
+}
+
+double MainWindow::read_m_YSTEP()
+{
+    return m_YSTEP/100;
+}
+

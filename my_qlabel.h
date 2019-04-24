@@ -13,9 +13,12 @@ public:
     explicit my_qlabel(QWidget *parent=0);
     void mouseDoubleClickEvent(QMouseEvent *ev);
     void mousePressEvent(QMouseEvent *ev);
+    void mouseReleaseEvent(QMouseEvent *ev);
 
 signals:
     void mouseDouble();
+    void mousePressed();
+    void mouseReleased();
 
 };
 
